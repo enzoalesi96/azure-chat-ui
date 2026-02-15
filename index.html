@@ -1,106 +1,142 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>Chat IA - Azure OpenAI</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f8;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    .chat-container {
-      width: 400px;
-      background: #fff;
-      border-radius: 8px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      display: flex;
-      flex-direction: column;
-    }
-    .messages {
-      flex: 1;
-      padding: 15px;
-      overflow-y: auto;
-    }
-    .message {
-      margin-bottom: 10px;
-    }
-    .user {
-      text-align: right;
-      color: #2563eb;
-    }
-    .bot {
-      text-align: left;
-      color: #111827;
-    }
-    .input-container {
-      display: flex;
-      border-top: 1px solid #e5e7eb;
-    }
-    input {
-      flex: 1;
-      padding: 10px;
-      border: none;
-      outline: none;
-    }
-    button {
-      padding: 10px 15px;
-      border: none;
-      background: #2563eb;
-      color: white;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #1d4ed8;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>TV Advisor AI</title>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f6fa;
+  display: flex;
+  justify-content: center;
+  padding-top: 50px;
+}
+
+.chat-container {
+  width: 400px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+  overflow: hidden;
+}
+
+.chat-header {
+  background: #1a73e8;
+  color: white;
+  padding: 15px;
+  font-weight: bold;
+}
+
+.chat-body {
+  padding: 15px;
+  min-height: 300px;
+}
+
+.chat-input {
+  display: flex;
+  border-top: 1px solid #ddd;
+}
+
+.chat-input input {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  outline: none;
+}
+
+.chat-input button {
+  background: #1a73e8;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+}
+
+.card {
+  background: #f9fafc;
+  padding: 15px;
+  border-radius: 10px;
+  margin-top: 10px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+}
+
+.card img {
+  width: 100%;
+  border-radius: 8px;
+}
+
+.price {
+  font-size: 20px;
+  font-weight: bold;
+  color: #1a73e8;
+}
+
+.button-link {
+  display: inline-block;
+  margin-top: 10px;
+  background: #1a73e8;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  text-decoration: none;
+}
+</style>
 </head>
+
 <body>
 
 <div class="chat-container">
-  <div class="messages" id="messages"></div>
-  <div class="input-container">
-    <input id="input" placeholder="Escribe tu mensaje..." />
+  <div class="chat-header">TV Advisor AI</div>
+  <div class="chat-body" id="chatBody"></div>
+
+  <div class="chat-input">
+    <input id="userInput" placeholder="Escribe tu mensaje..." />
     <button onclick="sendMessage()">Enviar</button>
   </div>
 </div>
 
 <script>
-  const API_URL = "https://openai-chat-fn.azurewebsites.net/api/chat";
+const API_URL = "https://openai-chat-fn.azurewebsites.net/api/chat";
 
-  async function sendMessage() {
-    const input = document.getElementById("input");
-    const message = input.value.trim();
-    if (!message) return;
+async function sendMessage() {
+  const input = document.getElementById("userInput");
+  const chat = document.getElementById("chatBody");
 
-    addMessage(message, "user");
-    input.value = "";
+  const message = input.value;
+  input.value = "";
 
-    try {
-      const response = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message })
-      });
+  const response = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message })
+  });
 
-      const data = await response.json();
-      addMessage(data.answer, "bot");
-    } catch (err) {
-      addMessage("Error al conectar con el servidor", "bot");
-    }
+  const data = await response.json();
+
+  if (data.info) {
+    chat.innerHTML += `<p>${data.info.replace(/\n/g,"<br>")}</p>`;
+    return;
   }
 
-  function addMessage(text, type) {
-    const messages = document.getElementById("messages");
-    const div = document.createElement("div");
-    div.className = `message ${type}`;
-    div.textContent = text;
-    messages.appendChild(div);
-    messages.scrollTop = messages.scrollHeight;
+  if (data.product) {
+    const p = data.product;
+
+    chat.innerHTML += `
+      <div class="card">
+        ${p.imagen ? `<img src="${p.imagen}" />` : ""}
+        <h3>${p.name}</h3>
+        <p><strong>Familia:</strong> ${p.familia}</p>
+        <p><strong>Pulgadas:</strong> ${p.pulgadas}"</p>
+        <p><strong>Resolución:</strong> ${p.resolucion}</p>
+        <p><strong>Vendedor:</strong> ${p.vendedor}</p>
+        <div class="price">S/ ${p.precio}</div>
+        <a class="button-link" href="${p.url}" target="_blank">
+          Ver producto
+        </a>
+      </div>
+    `;
   }
+}
 </script>
 
 </body>
