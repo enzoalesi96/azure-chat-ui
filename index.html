@@ -2,34 +2,40 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>TV Advisor AI</title>
+<title>VisionMatch AI</title>
+
 <style>
 body {
   font-family: Arial, sans-serif;
   background: #f4f6fa;
   display: flex;
   justify-content: center;
-  padding-top: 50px;
+  padding-top: 40px;
 }
 
 .chat-container {
-  width: 400px;
+  width: 420px;
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+  border-radius: 16px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .chat-header {
-  background: #1a73e8;
+  background: linear-gradient(135deg,#1a73e8,#4f8df7);
   color: white;
-  padding: 15px;
+  padding: 16px;
   font-weight: bold;
+  font-size: 18px;
 }
 
 .chat-body {
   padding: 15px;
-  min-height: 300px;
+  height: 500px;
+  overflow-y: auto;
+  background: #f9fafc;
 }
 
 .chat-input {
@@ -39,7 +45,7 @@ body {
 
 .chat-input input {
   flex: 1;
-  padding: 10px;
+  padding: 12px;
   border: none;
   outline: none;
 }
@@ -48,27 +54,58 @@ body {
   background: #1a73e8;
   color: white;
   border: none;
-  padding: 10px 20px;
+  padding: 12px 20px;
   cursor: pointer;
+  font-weight: bold;
+}
+
+.user-message {
+  text-align: right;
+  margin: 8px 0;
+}
+
+.user-bubble {
+  display: inline-block;
+  background: #1a73e8;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 16px;
+  max-width: 80%;
+}
+
+.bot-message {
+  text-align: left;
+  margin: 8px 0;
+}
+
+.bot-bubble {
+  display: inline-block;
+  background: #e8ecf5;
+  padding: 8px 12px;
+  border-radius: 16px;
+  max-width: 80%;
 }
 
 .card {
-  background: #f9fafc;
+  background: white;
   padding: 15px;
-  border-radius: 10px;
+  border-radius: 14px;
   margin-top: 10px;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+  animation: fadeIn 0.3s ease-in-out;
 }
 
 .card img {
   width: 100%;
-  border-radius: 8px;
+  border-radius: 10px;
+  margin-bottom: 10px;
 }
 
 .price {
   font-size: 20px;
   font-weight: bold;
   color: #1a73e8;
+  margin-top: 8px;
 }
 
 .button-link {
@@ -76,9 +113,15 @@ body {
   margin-top: 10px;
   background: #1a73e8;
   color: white;
-  padding: 8px 12px;
-  border-radius: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
   text-decoration: none;
+  font-weight: bold;
+}
+
+@keyframes fadeIn {
+  from {opacity:0; transform: translateY(10px);}
+  to {opacity:1; transform: translateY(0);}
 }
 </style>
 </head>
@@ -86,8 +129,20 @@ body {
 <body>
 
 <div class="chat-container">
-  <div class="chat-header">TV Advisor AI</div>
-  <div class="chat-body" id="chatBody"></div>
+  <div class="chat-header">VisionMatch AI</div>
+
+  <div class="chat-body" id="chatBody">
+    <div class="bot-message">
+      <div class="bot-bubble">
+        Buenas soy su BOT asistente, indícame:<br>
+        - Pulgadas<br>
+        - Presupuesto<br>
+        - Familia (LED / QLED / OLED / NanoCell)<br><br>
+        Ejemplo:<br>
+        👉 55 pulgadas QLED hasta 3000 soles
+      </div>
+    </div>
+  </div>
 
   <div class="chat-input">
     <input id="userInput" placeholder="Escribe tu mensaje..." />
@@ -96,15 +151,27 @@ body {
 </div>
 
 <script>
+
 const API_URL = "https://openai-chat-fn.azurewebsites.net/api/chat";
 
 async function sendMessage() {
   const input = document.getElementById("userInput");
   const chat = document.getElementById("chatBody");
 
-  const message = input.value;
-  input.value = "";
+  const message = input.value.trim();
+  if (!message) return;
 
+  // Mostrar mensaje usuario
+  chat.innerHTML += `
+    <div class="user-message">
+      <div class="user-bubble">${message}</div>
+    </div>
+  `;
+
+  input.value = "";
+  chat.scrollTop = chat.scrollHeight;
+
+  // Llamada al backend
   const response = await fetch(API_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -114,29 +181,46 @@ async function sendMessage() {
   const data = await response.json();
 
   if (data.info) {
-    chat.innerHTML += `<p>${data.info.replace(/\n/g,"<br>")}</p>`;
-    return;
+    chat.innerHTML += `
+      <div class="bot-message">
+        <div class="bot-bubble">
+          ${data.info.replace(/\n/g,"<br>")}
+        </div>
+      </div>
+    `;
   }
 
   if (data.product) {
     const p = data.product;
 
     chat.innerHTML += `
-      <div class="card">
-        ${p.imagen ? `<img src="${p.imagen}" />` : ""}
-        <h3>${p.name}</h3>
-        <p><strong>Familia:</strong> ${p.familia}</p>
-        <p><strong>Pulgadas:</strong> ${p.pulgadas}"</p>
-        <p><strong>Resolución:</strong> ${p.resolucion}</p>
-        <p><strong>Vendedor:</strong> ${p.vendedor}</p>
-        <div class="price">S/ ${p.precio}</div>
-        <a class="button-link" href="${p.url}" target="_blank">
-          Ver producto
-        </a>
+      <div class="bot-message">
+        <div class="card">
+          ${p.imagen ? `<img src="${p.imagen}" />` : ""}
+          <h3>${p.name}</h3>
+          <p><strong>Familia:</strong> ${p.familia}</p>
+          <p><strong>Pulgadas:</strong> ${p.pulgadas}"</p>
+          <p><strong>Resolución:</strong> ${p.resolucion}</p>
+          <p><strong>Vendedor:</strong> ${p.vendedor}</p>
+          <div class="price">S/ ${p.precio}</div>
+          <a class="button-link" href="${p.url}" target="_blank">
+            Ver producto
+          </a>
+        </div>
       </div>
     `;
   }
+
+  chat.scrollTop = chat.scrollHeight;
 }
+
+// Enviar con Enter
+document.getElementById("userInput").addEventListener("keypress", function(e) {
+  if (e.key === "Enter") {
+    sendMessage();
+  }
+});
+
 </script>
 
 </body>
