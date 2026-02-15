@@ -137,7 +137,7 @@ body {
   <div class="chat-header">VisionMatch AI</div>
 
   <div class="chat-body" id="chatBody">
-    <!-- NO mensaje inicial -->
+    <!-- No mensaje inicial -->
   </div>
 
   <div class="chat-input">
@@ -149,9 +149,24 @@ body {
 <script>
 
 const API_URL = "https://openai-chat-fn.azurewebsites.net/api/chat";
+let firstInteraction = true;
 
 function isTVQuery(text) {
   return /(pulgadas|led|qled|oled|nanocell|\d{2,3})/i.test(text);
+}
+
+function showBotMessage(message) {
+  const chat = document.getElementById("chatBody");
+
+  chat.innerHTML += `
+    <div class="bot-message">
+      <div class="bot-bubble">
+        ${message.replace(/\n/g,"<br>")}
+      </div>
+    </div>
+  `;
+
+  chat.scrollTop = chat.scrollHeight;
 }
 
 async function sendMessage() {
@@ -171,25 +186,37 @@ async function sendMessage() {
   input.value = "";
   chat.scrollTop = chat.scrollHeight;
 
-  // VALIDACIÓN LOCAL (solo TVs)
-  if (!isTVQuery(message)) {
-    chat.innerHTML += `
-      <div class="bot-message">
-        <div class="bot-bubble">
-          Solo puedo responder a consultas relacionado a televisores. Por favor indíqueme lo siguiente:<br><br>
-          - Pulgadas<br>
-          - Presupuesto<br>
-          - Familia (LED / QLED / OLED / NanoCell)<br><br>
-          Ejemplo:<br>
-          👉 55 pulgadas QLED hasta 3000 soles
-        </div>
-      </div>
-    `;
-    chat.scrollTop = chat.scrollHeight;
+  // 🔵 Primera interacción
+  if (firstInteraction) {
+    showBotMessage(
+`Buenas soy su BOT asistente, indícame:
+- Pulgadas
+- Presupuesto
+- Familia (LED / QLED / OLED / NanoCell)
+
+Ejemplo:
+👉 55 pulgadas QLED hasta 3000 soles`
+    );
+    firstInteraction = false;
     return;
   }
 
-  // Llamar backend
+  // 🔴 Fuera de contexto después de la primera vez
+  if (!isTVQuery(message)) {
+    showBotMessage(
+`Solo puedo responder a consultas relacionado a televisores. Por favor indíqueme lo siguiente:
+
+- Pulgadas 
+- Presupuesto
+- Familia (LED / QLED / OLED / NanoCell)
+
+Ejemplo:
+👉 55 pulgadas QLED hasta 3000 soles`
+    );
+    return;
+  }
+
+  // 🟢 Llamar backend
   const response = await fetch(API_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -199,13 +226,7 @@ async function sendMessage() {
   const data = await response.json();
 
   if (data.info) {
-    chat.innerHTML += `
-      <div class="bot-message">
-        <div class="bot-bubble">
-          ${data.info.replace(/\n/g,"<br>")}
-        </div>
-      </div>
-    `;
+    showBotMessage(data.info);
   }
 
   if (data.product) {
@@ -227,12 +248,12 @@ async function sendMessage() {
         </div>
       </div>
     `;
-  }
 
-  chat.scrollTop = chat.scrollHeight;
+    chat.scrollTop = chat.scrollHeight;
+  }
 }
 
-// Enter para enviar
+// Enviar con Enter
 document.getElementById("userInput").addEventListener("keypress", function(e) {
   if (e.key === "Enter") {
     sendMessage();
