@@ -57,6 +57,8 @@
     display:flex; align-items:center; justify-content:center; flex-shrink:0;
   }
   .avatar-sm svg { width:14px; height:14px; fill:#fff; }
+  .row.products-row { align-items:flex-start; }
+  .row.products-row > .products-wrap { flex:1 1 auto; min-width:0; }
   .bubble { max-width:75%; padding:11px 15px; border-radius:var(--radius-md); font-size:14px; line-height:1.6; color:var(--text-main); }
   .bubble.bot { background:var(--card-bg); border:1px solid var(--border); border-bottom-left-radius:4px; }
   .bubble.user { background:var(--blue); color:#fff; border-bottom-right-radius:4px; font-weight:500; }
@@ -67,10 +69,11 @@
   .dot { width:7px; height:7px; border-radius:50%; background:var(--text-hint); animation:pulse 1.4s infinite; }
   .dot:nth-child(2){animation-delay:.2s;} .dot:nth-child(3){animation-delay:.4s;}
   @keyframes pulse { 0%,60%,100%{opacity:.4;transform:scale(1);} 30%{opacity:1;transform:scale(1.25);} }
-  .products-wrap { display:flex; flex-direction:column; gap:10px; margin-top:4px; max-width:90%; }
+  .products-wrap { display:flex; flex-direction:column; gap:10px; margin-top:4px; width:100%; max-width:100%; min-width:0; }
   .tv-card {
     background:var(--card-bg); border:1px solid var(--border); border-radius:var(--radius-md);
     padding:14px; display:flex; gap:14px; align-items:flex-start; animation:fadeUp .3s ease both;
+    width:100%; max-width:100%; min-width:0; overflow:hidden;
   }
   .tv-card:first-child { border-color:var(--blue-mid); border-width:1.5px; }
   @keyframes fadeUp { from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:translateY(0);} }
@@ -81,18 +84,18 @@
   .tv-thumb { object-fit:contain; padding:4px; }
   .tv-thumb-placeholder { display:flex; align-items:center; justify-content:center; }
   .tv-thumb-placeholder svg { width:28px; height:28px; stroke:var(--text-hint); fill:none; }
-  .tv-info { flex:1; min-width:0; }
+  .tv-info { flex:1 1 auto; min-width:0; overflow:hidden; }
   .tv-badges { display:flex; gap:6px; margin-bottom:6px; flex-wrap:wrap; }
-  .badge { font-size:10px; font-weight:600; padding:2px 8px; border-radius:99px; }
+  .badge { font-size:10px; font-weight:600; padding:2px 8px; border-radius:99px; white-space:nowrap; }
   .badge-rank { background:var(--blue); color:#fff; }
   .badge-top { background:#FEF3C7; color:#92400E; border:1px solid #FDE68A; }
   .badge-fam { background:var(--blue-light); color:var(--blue); border:1px solid var(--blue-mid); }
   .tv-name { font-size:13px; font-weight:500; color:var(--text-main); line-height:1.35;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:4px; }
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:4px; max-width:100%; }
   .tv-meta { font-size:12px; color:var(--text-sub); display:flex; gap:12px; flex-wrap:wrap; margin-bottom:8px; }
-  .tv-meta span { display:flex; align-items:center; gap:3px; }
-  .tv-meta svg { width:12px; height:12px; stroke:var(--text-hint); fill:none; }
-  .tv-footer { display:flex; align-items:center; justify-content:space-between; }
+  .tv-meta span { display:flex; align-items:center; gap:3px; min-width:0; }
+  .tv-meta svg { width:12px; height:12px; stroke:var(--text-hint); fill:none; flex-shrink:0; }
+  .tv-footer { display:flex; align-items:center; justify-content:space-between; gap:8px; }
   .tv-price { font-size:17px; font-weight:600; color:var(--blue); letter-spacing:-0.4px; }
   .btn-ver { font-size:12px; font-weight:600; background:var(--blue); color:#fff;
     padding:6px 13px; border-radius:var(--radius-sm); text-decoration:none; white-space:nowrap; }
@@ -175,26 +178,67 @@ function removeTyping(){ const e=document.getElementById("typingRow"); if(e) e.r
 function setLoading(on){ document.getElementById("sendBtn").disabled=on; document.getElementById("userInput").disabled=on; }
 
 function renderProducts(products){
-  const cards = products.map((p,i)=>{
-    const isTop = i===0;
-    const img = p.imagen
-      ? `<img class="tv-thumb" src="${p.imagen}" alt="${p.name}" onerror="this.outerHTML='<div class=tv-thumb-placeholder>${ICON_TV}</div>'">`
-      : `<div class="tv-thumb-placeholder">${ICON_TV}</div>`;
-    const price = Number(p.precio).toLocaleString("es-PE",{maximumFractionDigits:0});
-    return `<div class="tv-card">${img}<div class="tv-info">
+  const chat = document.getElementById("chatBody");
+
+  // Fila contenedora con avatar + grilla de cards
+  const row = document.createElement("div");
+  row.className = "row products-row";
+  row.insertAdjacentHTML("beforeend", botAvatar());
+
+  const wrap = document.createElement("div");
+  wrap.className = "products-wrap";
+
+  products.forEach((p, i) => {
+    const isTop = i === 0;
+    const price = Number(p.precio).toLocaleString("es-PE", { maximumFractionDigits: 0 });
+
+    const card = document.createElement("div");
+    card.className = "tv-card";
+
+    // --- Imagen (con fallback seguro vía addEventListener, no onerror inline) ---
+    if (p.imagen) {
+      const img = document.createElement("img");
+      img.className = "tv-thumb";
+      img.src = p.imagen;
+      img.alt = p.name || "Televisor";
+      img.addEventListener("error", () => {
+        const ph = document.createElement("div");
+        ph.className = "tv-thumb-placeholder";
+        ph.innerHTML = ICON_TV;
+        img.replaceWith(ph);
+      });
+      card.appendChild(img);
+    } else {
+      const ph = document.createElement("div");
+      ph.className = "tv-thumb-placeholder";
+      ph.innerHTML = ICON_TV;
+      card.appendChild(ph);
+    }
+
+    // --- Info del producto ---
+    const info = document.createElement("div");
+    info.className = "tv-info";
+    info.innerHTML = `
       <div class="tv-badges">
-        <span class="badge badge-rank">#${p.rank||i+1}</span>
-        ${isTop?'<span class="badge badge-top">Mejor opción</span>':''}
-        <span class="badge badge-fam">${p.familia||''}</span>
+        <span class="badge badge-rank">#${p.rank || i + 1}</span>
+        ${isTop ? '<span class="badge badge-top">Mejor opción</span>' : ''}
+        <span class="badge badge-fam">${p.familia || ''}</span>
       </div>
-      <div class="tv-name" title="${p.name}">${p.name}</div>
-      <div class="tv-meta"><span>${ICON_RULER} ${p.pulgadas}"</span><span>${ICON_STORE} ${p.vendedor}</span></div>
-      <div class="tv-footer"><span class="tv-price">S/ ${price}</span>
-        <a class="btn-ver" href="${p.url}" target="_blank" rel="noopener">Ver producto →</a></div>
-    </div></div>`;
-  }).join("");
-  document.getElementById("chatBody").insertAdjacentHTML("beforeend",
-    `<div class="row">${botAvatar()}<div class="products-wrap">${cards}</div></div>`);
+      <div class="tv-name" title="${(p.name || '').replace(/"/g, '&quot;')}">${p.name || ''}</div>
+      <div class="tv-meta">
+        <span>${ICON_RULER} ${p.pulgadas}"</span>
+        <span>${ICON_STORE} ${p.vendedor || ''}</span>
+      </div>
+      <div class="tv-footer">
+        <span class="tv-price">S/ ${price}</span>
+        <a class="btn-ver" href="${p.url || '#'}" target="_blank" rel="noopener">Ver producto →</a>
+      </div>`;
+    card.appendChild(info);
+    wrap.appendChild(card);
+  });
+
+  row.appendChild(wrap);
+  chat.appendChild(row);
   scrollBottom();
 }
 
