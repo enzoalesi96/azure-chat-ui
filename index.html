@@ -90,6 +90,7 @@
   .badge-rank { background:var(--blue); color:#fff; }
   .badge-top { background:#FEF3C7; color:#92400E; border:1px solid #FDE68A; }
   .badge-fam { background:var(--blue-light); color:var(--blue); border:1px solid var(--blue-mid); }
+  .badge-tienda { background:#ECFDF5; color:#047857; border:1px solid #A7F3D0; }
   .tv-name { font-size:13px; font-weight:500; color:var(--text-main); line-height:1.35;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:4px; max-width:100%; }
   .tv-meta { font-size:12px; color:var(--text-sub); display:flex; gap:12px; flex-wrap:wrap; margin-bottom:8px; }
@@ -223,11 +224,12 @@ function renderProducts(products){
         <span class="badge badge-rank">#${p.rank || i + 1}</span>
         ${isTop ? '<span class="badge badge-top">Mejor opción</span>' : ''}
         <span class="badge badge-fam">${p.familia || ''}</span>
+        ${p.tienda ? `<span class="badge badge-tienda">${p.tienda}</span>` : ''}
       </div>
       <div class="tv-name" title="${(p.name || '').replace(/"/g, '&quot;')}">${p.name || ''}</div>
       <div class="tv-meta">
         <span>${ICON_RULER} ${p.pulgadas}"</span>
-        <span>${ICON_STORE} ${p.vendedor || ''}</span>
+        <span>${ICON_STORE} ${p.tienda || p.vendedor || ''}</span>
       </div>
       <div class="tv-footer">
         <span class="tv-price">S/ ${price}</span>
